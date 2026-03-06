@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Timer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fff;
+      color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 2rem;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .mode-btn {
+      background: none;
+      border: none;
+      color: #888;
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .mode-btn:hover {
+      color: #222;
+      background: rgba(0,0,0,0.07);
+    }
+
+    .mode-btn.active {
+      background: rgba(0,0,0,0.08);
+      color: #222;
+    }
+
+    .timer-ring {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .timer-ring svg {
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: rgba(0,0,0,0.1);
+      stroke-width: 6;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: #e74c3c;
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+
+    .timer-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .time {
+      font-size: 4rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      line-height: 1;
+    }
+
+    .session-label {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .btn-primary {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      padding: 0.8rem 2.5rem;
+      border-radius: 30px;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      min-width: 130px;
+    }
+
+    .btn-primary:hover {
+      background: #c0392b;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      color: #aaa;
+      cursor: pointer;
+      padding: 0.6rem;
+      border-radius: 50%;
+      transition: color 0.2s, background 0.2s;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-icon:hover {
+      color: #222;
+      background: rgba(0,0,0,0.07);
+    }
+
+    .rounds {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .round-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.15);
+      transition: background 0.3s;
+    }
+
+    .round-dot.done {
+      background: #e74c3c;
+    }
+
+    .task-card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 0.65rem 1.1rem;
+      margin: 0 auto 1.5rem;
+      width: fit-content;
+      min-width: 200px;
+      max-width: 300px;
+      cursor: text;
+      transition: background 0.2s;
+    }
+
+    .task-card:hover { background: #efefef; }
+    .task-card:focus-within { background: #efefef; outline: 2px solid rgba(0,0,0,0.1); outline-offset: 0; }
+    .task-card svg { color: #bbb; flex-shrink: 0; }
+
+    .task-card-text {
+      font-size: 1.8rem;
+      color: #444;
+      font-weight: 300;
+      outline: none;
+      min-width: 4ch;
+      max-width: 240px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-card-text:empty::before {
+      content: 'What are you working on?';
+      color: #ccc;
+    }
+
+    /* Mode colors */
+    body.break .ring-progress { stroke: #27ae60; }
+    body.break .btn-primary { background: #27ae60; }
+    body.break .btn-primary:hover { background: #219a52; }
+    body.break .round-dot.done { background: #27ae60; }
+
+    body.long-break .ring-progress { stroke: #2980b9; }
+    body.long-break .btn-primary { background: #2980b9; }
+    body.long-break .btn-primary:hover { background: #216fa0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>One Step At A Time</h1>
+
+    <div class="mode-tabs">
+      <button class="mode-btn active" data-mode="pomodoro">Pomodoro</button>
+      <button class="mode-btn" data-mode="break">Short Break</button>
+      <button class="mode-btn" data-mode="long-break">Long Break</button>
+    </div>
+
+    <div class="timer-ring">
+      <svg width="260" height="260" viewBox="0 0 260 260">
+        <circle class="ring-bg" cx="130" cy="130" r="118"/>
+        <circle class="ring-progress" cx="130" cy="130" r="118"
+          stroke-dasharray="741.4"
+          stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-display">
+        <div class="time" id="time">25:00</div>
+        <div class="session-label" id="session-label">Focus</div>
+      </div>
+    </div>
+
+    <div class="task-card" id="task-card">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      <span class="task-card-text" id="task-text" contenteditable="true" spellcheck="false"></span>
+    </div>
+
+    <div class="controls">
+      <button class="btn-icon" id="reset-btn" title="Reset">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 .49-4.5"></path>
+        </svg>
+      </button>
+      <button class="btn-primary" id="start-btn">Start</button>
+      <button class="btn-icon" id="skip-btn" title="Skip">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 4 15 12 5 20 5 4"></polygon>
+          <line x1="19" y1="5" x2="19" y2="19"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="rounds" id="rounds">
+      <div class="round-dot"></div>
+      <div class="round-dot"></div>
+      <div class="round-dot"></div>
+      <div class="round-dot"></div>
+    </div>
+  </div>
+
+  <script>
+    const MODES = {
+      pomodoro:    { duration: 25 * 60, label: 'Focus',      bodyClass: '' },
+      break:       { duration:  5 * 60, label: 'Short Break', bodyClass: 'break' },
+      'long-break':{ duration: 15 * 60, label: 'Long Break',  bodyClass: 'long-break' },
+    };
+
+    const CIRCUMFERENCE = 741.4; // 2 * PI * 118
+    const LONG_BREAK_INTERVAL = 4;
+
+    let mode = 'pomodoro';
+    let totalSeconds = MODES[mode].duration;
+    let remaining = totalSeconds;
+    let running = false;
+    let intervalId = null;
+    let completedRounds = 0;
+
+    const timeEl = document.getElementById('time');
+    const labelEl = document.getElementById('session-label');
+    const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    const progress = document.querySelector('.ring-progress');
+    const roundDots = document.querySelectorAll('.round-dot');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60).toString().padStart(2, '0');
+      const sec = (s % 60).toString().padStart(2, '0');
+      return `${m}:${sec}`;
+    }
+
+    function updateDisplay() {
+      timeEl.textContent = formatTime(remaining);
+      document.title = `${formatTime(remaining)} — ${MODES[mode].label}`;
+      const fraction = remaining / totalSeconds;
+      progress.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+    }
+
+    function updateRounds() {
+      roundDots.forEach((dot, i) => {
+        dot.classList.toggle('done', i < (completedRounds % LONG_BREAK_INTERVAL));
+      });
+    }
+
+    function setMode(newMode) {
+      clearInterval(intervalId);
+      running = false;
+      mode = newMode;
+      totalSeconds = MODES[mode].duration;
+      remaining = totalSeconds;
+      startBtn.textContent = 'Start';
+      labelEl.textContent = MODES[mode].label;
+      document.body.className = MODES[mode].bodyClass;
+      modeBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      updateDisplay();
+    }
+
+    function tick() {
+      remaining--;
+      updateDisplay();
+      if (remaining <= 0) {
+        clearInterval(intervalId);
+        running = false;
+        startBtn.textContent = 'Start';
+        onComplete();
+      }
+    }
+
+    function onComplete() {
+      if (mode === 'pomodoro') {
+        completedRounds++;
+        updateRounds();
+        const nextMode = (completedRounds % LONG_BREAK_INTERVAL === 0) ? 'long-break' : 'break';
+        setMode(nextMode);
+        notifyUser(`Time for a ${nextMode === 'long-break' ? 'long' : 'short'} break!`);
+      } else {
+        setMode('pomodoro');
+        notifyUser('Break over — time to focus!');
+      }
+    }
+
+    function notifyUser(msg) {
+      if (Notification.permission === 'granted') {
+        new Notification('Pomodoro Timer', { body: msg, icon: '' });
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (running) {
+        clearInterval(intervalId);
+        running = false;
+        startBtn.textContent = 'Resume';
+      } else {
+        running = true;
+        startBtn.textContent = 'Pause';
+        intervalId = setInterval(tick, 1000);
+        // Request notification permission on first start
+        if (Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      setMode(mode);
+    });
+
+    skipBtn.addEventListener('click', () => {
+      onComplete();
+    });
+
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => setMode(btn.dataset.mode));
+    });
+
+    // Task description
+    const taskText = document.getElementById('task-text');
+    const taskCard = document.getElementById('task-card');
+
+    taskText.textContent = localStorage.getItem('pomodoro-task') || '';
+
+    taskCard.addEventListener('click', () => taskText.focus());
+
+    taskText.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); taskText.blur(); }
+    });
+
+    taskText.addEventListener('blur', () => {
+      localStorage.setItem('pomodoro-task', taskText.textContent.trim());
+    });
+
+    // Init
+    updateDisplay();
+    updateRounds();
+  </script>
+</body>
+</html>
